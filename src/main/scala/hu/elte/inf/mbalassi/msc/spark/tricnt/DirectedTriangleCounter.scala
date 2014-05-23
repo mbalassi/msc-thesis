@@ -13,15 +13,14 @@ object DirectedTriangleCounter {
       List("target/scala-2.10/triangle-counter_2.10-1.0.jar"))
 
     val inputData = sc.textFile(input, 2)
-    val graph = inputData.map(line => line.split(' ').map(x => x.toInt).toList)
+    val graph = inputData.map(line => line.split(' ').map(vertex => vertex.toInt).toList)
                         .map(line => (line.head, line.tail)).cache
 
-    val bidir = graph.map(pair => (pair._2.filter(_ > pair._1), pair._1))
-    val bidirOut = bidir.flatMap{pair => pair._1 zip 
-                        List.fill(pair._1.length)(pair._2)}
-    val triCan = (graph.map(pair => (pair._1, pair._2.filter(pair._1 > _))) join bidirOut)
-                        .flatMap{pair => pair._2._1 zip List.fill(pair._2._1.length)(pair._2._2)}
-    val triCnt = (graph join triCan).filter(pair => pair._2._1.contains(pair._2._2)).count
+    val bidir = graph.map{case (vertex, links) => (links.filter(_ > vertex), vertex)}
+    					.flatMap{case (targets, vertex) => targets zip List.fill(targets.length)(vertex)}
+    val triCan = (graph.map{case (vertex, links) =>(vertex, links.filter(vertex > _))} join bidir)
+                        .flatMap{case (vertex, (links, target)) => links zip List.fill(links.length)(target)}
+    val triCnt = (graph join triCan).filter{case (vertex, (links, target)) => links.contains(target)}.count 
     println("TRI_CNT: %d".format(triCnt))
   }
 }
